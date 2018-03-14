@@ -27,6 +27,57 @@ If you like to know details about how gradle works, you can take a look at [grad
 ### Take advantage of gradle integration
 
 
+```
+root-of-project/
+  .git/
+    hooks/
+  gradle-module/
+  	build.gradle
+  	hooks.gradle
+  our-hooks/
+  	build.gradle
+    pre-commit
+```
+
+
+###### gradle-module/build.gradle
+```groovy
+apply from: "hooks.gradle"
+```
+
+
+###### gradle-module/hooks.gradle
+```groovy
+def hooksFile(hooksFile) {
+    def hooksFolder = file('../our-hooks/')
+    return new File(hooksFolder, hooksFile)
+}
+
+apply from: hooksFile('build.gradle')
+```
+
+
+###### our-hooks/build.gradle
+```groovy
+task deployHooks(type: Exec) {
+    description 'Change default git hooks path to use our hooks'
+    group 'our-hooks'
+    workingDir rootDir
+    commandLine 'git'
+    args 'config', 'core.hooksPath', 'our-hooks'
+    doLast {
+        println 'Hooks deployed successfully'
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if ((task.name == 'clean') || (task.name.contains('assemble'))) {
+        task.dependsOn deployHooks
+    }
+}
+```
+
+
 [gradle]: https://gradle.org
 [gradle-docs]: https://docs.gradle.org/current/userguide/userguide.html
 [groovy]: http://groovy-lang.org/
